@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neuro Corpe - Prova Jovem Aprendiz</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; }
+    h1, h2, h3 { text-align: center; }
+    .hidden { display: none; }
+    .container { max-width: 700px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .question { margin-bottom: 15px; }
+    button { background: #007BFF; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; }
+    button:hover { background: #0056b3; }
+    .correct { color: green; }
+    .incorrect { color: red; }
+    .result-box { margin-top: 20px; padding: 15px; border-radius: 5px; background: #f9f9f9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <h1>Neuro Corpe</h1>
+    <h2>Prova Jovem Aprendiz</h2>
+
+    <!-- Tela inicial -->
+    <div id="startScreen">
+      <h3>Preencha seus dados para iniciar a prova</h3>
+      <label>Nome completo:</label><br>
+      <input type="text" id="nome" required><br><br>
+
+      <label>Gmail:</label><br>
+      <input type="email" id="gmail" required><br><br>
+
+      <label>Telefone:</label><br>
+      <input type="tel" id="telefone" required><br><br>
+
+      <button onclick="startExam()">Iniciar Prova</button>
+    </div>
+
+    <!-- Prova -->
+    <form id="examForm" class="hidden">
+      <div id="questions"></div>
+      <button type="button" onclick="submitExam()">Enviar Respostas</button>
+    </form>
+
+    <!-- Resultado -->
+    <div id="resultScreen" class="hidden"></div>
+  </div>
+
+<script>
+let usuario = {}; // vai guardar nome, gmail e telefone
+
+const gabarito = {
+  1: "b",
+  2: "Maria, João e Pedro chegaram cedo.",
+  3: "Os alunos chegaram atrasados.",
+  4: "440",
+  5: "32",
+  6: "48",
+  7: "a",
+  8: "Backspace",
+  9: "b",
+  10: "c"
+};
+
+const questoes = [
+  { id: 1, tipo: "radio", pergunta: "1. Assinale a frase escrita corretamente:", opcoes: ["Nós vai aprender muito aqui.", "Nós vamos aprender muito aqui.", "Nós vai aprendermos muito aqui."] },
+  { id: 2, tipo: "texto", pergunta: "2. Coloque a vírgula no lugar correto: 'Maria João e Pedro chegaram cedo.'", placeholder: "Digite a frase correta" },
+  { id: 3, tipo: "texto", pergunta: "3. Encontre o erro na frase e reescreva-a: 'Os aluno chegou atrasado.'", placeholder: "Digite a frase corrigida" },
+  { id: 4, tipo: "texto", pergunta: "4. Se um vale-refeição diário é de R$20,00, quanto será o valor total para 22 dias úteis?", placeholder: "Digite o valor" },
+  { id: 5, tipo: "texto", pergunta: "5. Qual é o próximo número da sequência? 2 – 4 – 8 – 16 – ___ – 64", placeholder: "Digite o número" },
+  { id: 6, tipo: "texto", pergunta: "6. Uma sala tem 8 fileiras com 6 cadeiras em cada. Quantas cadeiras há no total?", placeholder: "Digite o número" },
+  { id: 7, tipo: "radio", pergunta: "7. Para criar um documento no computador, qual programa você poderia usar?", opcoes: ["Microsoft Word", "WhatsApp", "Google Chrome"] },
+  { id: 8, tipo: "texto", pergunta: "8. No teclado do computador, qual tecla usamos para apagar o que está à esquerda do cursor?", placeholder: "Digite a tecla" },
+  { id: 9, tipo: "radio", pergunta: "9. Se você terminar uma tarefa antes do horário, o que faria?", opcoes: ["Esperaria até a hora acabar", "Pediria outra tarefa ou ajudaria um colega", "Iria embora mais cedo"] },
+  { id: 10, tipo: "radio", pergunta: "10. Um cliente chega com dúvida e você não sabe a resposta. O que faz?", opcoes: ["Ignora e continua trabalhando", "Diz que não sabe e tenta adivinhar", "Explica que vai procurar a informação com alguém responsável"] }
+];
+
+function startExam() {
+  let nome = document.getElementById("nome").value.trim();
+  let gmail = document.getElementById("gmail").value.trim();
+  let telefone = document.getElementById("telefone").value.trim();
+
+  if (!nome || !gmail || !telefone) {
+    alert("Por favor, preencha todos os campos!");
+    return;
+  }
+
+  usuario = { nome, gmail, telefone }; // salva dados do usuário
+
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("examForm").classList.remove("hidden");
+
+  // embaralhar questões
+  let embaralhadas = questoes.sort(() => Math.random() - 0.5);
+  let questionsDiv = document.getElementById("questions");
+  questionsDiv.innerHTML = "";
+
+  embaralhadas.forEach(q => {
+    let div = document.createElement("div");
+    div.classList.add("question");
+    let html = `<p>${q.pergunta}</p>`;
+
+    if (q.tipo === "radio") {
+      q.opcoes.forEach((op, idx) => {
+        let letra = String.fromCharCode(97 + idx);
+        html += `<label><input type="radio" name="q${q.id}" value="${letra}"> ${op}</label><br>`;
+      });
+    } else {
+      html += `<input type="text" name="q${q.id}" placeholder="${q.placeholder}" style="width:100%"><br>`;
+    }
+
+    div.innerHTML = html;
+    questionsDiv.appendChild(div);
+  });
+}
+
+function submitExam() {
+  document.body.innerHTML = "<div class='container'><h1>Neuro Corpe</h1><h2>Resultado</h2>";
+
+  let acertos = 0, erros = 0;
+  let resultHTML = "<div class='result-box'><h3>Correção:</h3>";
+
+  questoes.forEach(q => {
+    let resposta;
+    if (q.tipo === "radio") {
+      let selecionado = document.querySelector(`input[name='q${q.id}']:checked`);
+      resposta = selecionado ? selecionado.value : "";
+    } else {
+      resposta = document.querySelector(`[name='q${q.id}']`)?.value.trim();
+    }
+
+    if (resposta == gabarito[q.id]) {
+      acertos++;
+      resultHTML += `<p class='correct'>Questão ${q.id}: Correta ✔️</p>`;
+    } else {
+      erros++;
+      resultHTML += `<p class='incorrect'>Questão ${q.id}: Errada ❌ (Correto: ${gabarito[q.id]})</p>`;
+    }
+  });
+
+  resultHTML += `<hr><p><b>Total de acertos:</b> ${acertos}</p>`;
+  resultHTML += `<p><b>Total de erros:</b> ${erros}</p>`;
+  resultHTML += `<p><b>O máximo permitido são 3 erros.</b></p>`;
+
+  // Mostra os dados do usuário
+  resultHTML += `<hr><h3>Dados do candidato:</h3>`;
+  resultHTML += `<p><b>Nome:</b> ${usuario.nome}</p>`;
+  resultHTML += `<p><b>Gmail:</b> ${usuario.gmail}</p>`;
+  resultHTML += `<p><b>Telefone:</b> ${usuario.telefone}</p>`;
+
+  resultHTML += `<hr><p>E-mail de contato da empresa (não mande, apenas aguarde nossa resposta):</p>`;
+  resultHTML += `<h3>neorocorpesite@gmail.com</h3></div></div>`;
+
+  document.body.innerHTML += resultHTML;
+}
+</script>
+</body>
+</html>
